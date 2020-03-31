@@ -1,4 +1,4 @@
-package com.pack.database;
+package com.pack.exceptions;
 
 public enum ServiceError {
 
@@ -16,7 +16,7 @@ public enum ServiceError {
 
     private String message;
 
-    public String getMessage(){
+    public String message(){
         return message;
     }
 }

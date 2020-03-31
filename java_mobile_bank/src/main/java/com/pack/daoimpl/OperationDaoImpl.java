@@ -2,29 +2,36 @@ package com.pack.daoimpl;
 
 import com.pack.dao.AccountDao;
 import com.pack.dao.OperationDao;
-import com.pack.database.ServiceError;
-import com.pack.database.DatabaseException;
 import com.pack.database.JdbcService;
-import com.pack.model.*;
+import com.pack.exceptions.DatabaseException;
+import com.pack.exceptions.ServiceError;
+import com.pack.model.Account;
+import com.pack.model.Operation;
+import com.pack.model.OperationType;
 import com.pack.utils.ConverterUtils;
 
 import java.math.BigDecimal;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
-import static com.pack.database.ServiceError.NOT_ENOUGH_MONEY;
+import static com.pack.exceptions.ServiceError.NOT_ENOUGH_MONEY;
 
 public class OperationDaoImpl implements OperationDao {
 
     private AccountDao accountDao = new AccountDaoImpl();
 
-    public void updateAccountAmount(UUID token, UUID accountId, BigDecimal amount) throws SQLException, DatabaseException {
-        List<UUID> accounts = accountDao.getUserAccounts(token);
-        if (-1 == accounts.indexOf(accountId)) {
+    @Override
+    public void updateAccountAmount(UUID token, Operation operation) throws SQLException, DatabaseException {
+        List<UUID> accounts = accountDao.getUserAccounts(token).stream()
+                .map(Account::getId)
+                .collect(Collectors.toList());
+        if (-1 == accounts.indexOf(operation.getAccountTo())) {
             throw new DatabaseException(ServiceError.ACCOUNT_NOT_FOUND);
         }
-        JdbcService.updateAccountAmount(accountId, amount);
+        JdbcService.updateAccountAmount(operation.getAccountTo(), operation.getAmountAfter());
+        JdbcService.insertOperation(operation);
     }
 
     @Override
@@ -39,17 +46,22 @@ public class OperationDaoImpl implements OperationDao {
 
         BigDecimal accountAmount = accountFrom.getAmount();
         if (accountAmount.compareTo(amount) < 0) {
-            throw new IllegalArgumentException(NOT_ENOUGH_MONEY.getMessage());
+            throw new IllegalArgumentException(NOT_ENOUGH_MONEY.message());
         }
         operation.setAmountBefore(accountAmount);
         operation.setAmountAfter(accountAmount.subtract(amount));
 
-        BigDecimal moneyToBefore = accountTo.getAmount();
-        BigDecimal moneyToAfter = moneyToBefore.add(ConverterUtils.convert(amount,
+        BigDecimal recipientAmountBefore = accountTo.getAmount();
+        BigDecimal recipientAmountAfter = recipientAmountBefore.add(ConverterUtils.convert(amount,
                 operation.getAccCode(), accountTo.getAccCode()));
 
         JdbcService.updateAccountAmount(operation.getAccountFrom(), operation.getAmountAfter());
-        JdbcService.updateAccountAmount(operation.getAccountTo(), moneyToAfter);
+        JdbcService.updateAccountAmount(operation.getAccountTo(), recipientAmountAfter);
+        JdbcService.insertOperation(operation);
+
+        operation.setAmountBefore(recipientAmountBefore);
+        operation.setAmountAfter(recipientAmountAfter);
+        operation.setType(OperationType.RECEIPTS);
         JdbcService.insertOperation(operation);
     }
 

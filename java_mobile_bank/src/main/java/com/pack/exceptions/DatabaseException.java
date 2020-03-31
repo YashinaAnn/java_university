@@ -1,4 +1,4 @@
-package com.pack.database;
+package com.pack.exceptions;
 
 public class DatabaseException extends Exception {
 
@@ -9,7 +9,7 @@ public class DatabaseException extends Exception {
     }
 
     public DatabaseException(ServiceError error){
-        this.message = error.getMessage();
+        this.message = error.message();
     }
 
     public String getMessage(){

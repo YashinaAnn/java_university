@@ -6,11 +6,11 @@ import com.pack.daoimpl.AccountDaoImpl;
 import com.pack.daoimpl.UserDaoImpl;
 import com.pack.database.JdbcService;
 import com.pack.database.JdbcUtils;
-import com.pack.dto.CreateAccountDto;
+import com.pack.dto.CreateAccountRequestDto;
 import com.pack.dto.CredentialsDto;
 import com.pack.dto.Response;
 import com.pack.dto.UserDto;
-import com.pack.model.AccCode;
+import com.pack.model.Currency;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
@@ -23,10 +23,11 @@ import static org.junit.Assert.assertEquals;
 
 public class BaseTest {
 
-    protected static boolean setUpIsDone = false;
-    protected static AccountDao accountDao = new AccountDaoImpl();
-    protected static UserDao userDao = new UserDaoImpl();
-    protected static AccountService accountService = new AccountService(userDao, accountDao);
+    private static boolean setUpIsDone = false;
+    private static AccountDao accountDao = new AccountDaoImpl();
+    private static UserDao userDao = new UserDaoImpl();
+    private static AccountService accountService = new AccountService(accountDao);
+    private static UserService userService = new UserService(userDao);
 
     @BeforeClass()
     public static void setUp() {
@@ -52,23 +53,23 @@ public class BaseTest {
     }
 
     void createUser(UserDto user) {
-        Assert.assertEquals(accountService.createUser(user), "User is created!");
+        Assert.assertEquals(userService.createUser(user), "User is created!");
     }
 
     UUID createAndLoginUser(UserDto user) {
         createUser(user);
-        Response<UUID> response = accountService.loginUserByLogin(
+        Response<UUID> response = userService.loginUserByLogin(
                 new CredentialsDto(user.getLogin(), user.getPassword()));
         assertEquals("", response.getError());
         return response.getData();
     }
 
     UUID createAccount(UUID token) {
-        return createAccount(token, AccCode.RUB.toString());
+        return createAccount(token, Currency.RUB.toString());
     }
 
     UUID createAccount(UUID token, String accCode) {
-        Response<UUID> response = accountService.createAccount(new CreateAccountDto(token, accCode));
+        Response<UUID> response = accountService.createAccount(new CreateAccountRequestDto(token, accCode));
         assertEquals("", response.getError());
         return response.getData();
     }

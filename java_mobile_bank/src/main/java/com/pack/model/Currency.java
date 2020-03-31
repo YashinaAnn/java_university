@@ -1,6 +1,5 @@
 package com.pack.model;
 
-public enum AccCode {
-
+public enum Currency {
     RUB, EURO, USD
 }

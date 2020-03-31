@@ -2,12 +2,12 @@ package com.pack.services;
 
 import com.pack.dao.AccountDao;
 import com.pack.dao.OperationDao;
-import com.pack.database.DatabaseException;
 import com.pack.dto.Response;
-import com.pack.dto.UpdateAccountAmountRequestDto;
+import com.pack.dto.TransferMoneyRequestDto;
+import com.pack.exceptions.DatabaseException;
 import com.pack.model.Account;
 import com.pack.model.Operation;
-import com.pack.model.UpdateAccountAmountInfo;
+import com.pack.model.OperationType;
 import com.pack.utils.ConverterUtils;
 import com.pack.utils.Utils;
 
@@ -26,24 +26,33 @@ public class OperationsService {
         this.operationDao = operationDao;
     }
 
-    public String replenishAccount(UpdateAccountAmountRequestDto request) {
+    public String replenishAccount(TransferMoneyRequestDto request) {
         try {
-            UpdateAccountAmountInfo info = new UpdateAccountAmountInfo(request);
-            Account account = accountDao.getAccountById(request.getAccountToId(), info.getToken());
-            BigDecimal amount = ConverterUtils.convert(info.getAmount(), info.getAccCode(), account.getAccCode());
-            operationDao.updateAccountAmount(info.getToken(), info.getAccountToId(), account.getAmount().add(amount));
+            Account.validateAmount(request.getAmount());
+            Operation operation = new Operation(request);
+            operation.setType(OperationType.REPLENISHMENT);
+            Account account = accountDao
+                    .getAccountById(request.getAccountToId(), request.getToken());
+            BigDecimal amount = ConverterUtils.convert(operation.getAmount(),
+                    operation.getAccCode(), account.getAccCode());
+            BigDecimal amountBefore = account.getAmount();
+            BigDecimal amountAfter = amountBefore.add(amount);
+            operation.setAmountBefore(amountBefore);
+            operation.setAmountAfter(amountAfter);
+
+            operationDao.updateAccountAmount(request.getToken(), operation);
             return "";
         } catch (IllegalArgumentException | DatabaseException | SQLException e) {
             return e.getMessage();
         }
     }
 
-    public String transferMoneyToAccount(UpdateAccountAmountRequestDto request) {
+    public String transferMoneyToAccount(TransferMoneyRequestDto request) {
         try {
-            UpdateAccountAmountInfo info = new UpdateAccountAmountInfo(request);
-            operationDao.transferMoneyToAccount(new Operation(request), info.getToken());
+            Account.validateAmount(request.getAmount());
+            operationDao.transferMoneyToAccount(new Operation(request), request.getToken());
             return "";
-        } catch (IllegalArgumentException | DatabaseException | SQLException e) {
+        } catch (IllegalArgumentException | DatabaseException | SQLException | NullPointerException e) {
             return e.getMessage();
         }
     }
@@ -53,7 +62,7 @@ public class OperationsService {
             Utils.validateToken(token);
             List<Operation> operations = operationDao.getOperationsList(token);
             return new Response<>(operations, "");
-        } catch (IllegalArgumentException | DatabaseException | SQLException e) {
+        } catch (IllegalArgumentException | DatabaseException | SQLException | NullPointerException e) {
             return new Response<>(null, e.getMessage());
         }
     }

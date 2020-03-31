@@ -1,12 +1,12 @@
 package com.pack.services;
 
 import com.pack.dao.AccountDao;
-import com.pack.dao.UserDao;
-import com.pack.database.DatabaseException;
 import com.pack.database.JdbcUtils;
-import com.pack.dto.*;
+import com.pack.dto.CreateAccountRequestDto;
+import com.pack.dto.Response;
+import com.pack.exceptions.DatabaseException;
+import com.pack.exceptions.ServiceError;
 import com.pack.model.Account;
-import com.pack.model.Credentials;
 import com.pack.model.User;
 import com.pack.utils.Utils;
 
@@ -16,86 +16,46 @@ import java.util.UUID;
 
 public class AccountService {
 
-    private UserDao userDao;
     private AccountDao accountDao;
 
-    public AccountService(UserDao userDao, AccountDao accountDao) {
+    public AccountService(AccountDao accountDao) {
         this.accountDao = accountDao;
-        this.userDao = userDao;
     }
 
-    public String createUser(UserDto userDto) {
-        try {
-            User user = new User(userDto);
-            userDao.createUser(user);
-            return "User is created!";
-        } catch (IllegalArgumentException | DatabaseException | SQLException e) {
-            return e.getMessage();
-        }
-    }
-
-    public Response<UUID> createAccount(CreateAccountDto createAccountDto) {
+    public Response<UUID> createAccount(CreateAccountRequestDto createAccountDto) {
         try {
             Utils.validateToken(createAccountDto.getToken());
             Account account = new Account(createAccountDto);
             accountDao.createAccount(createAccountDto.getToken(), account);
             return new Response<>(account.getId(), "");
-        } catch (IllegalArgumentException | DatabaseException | SQLException e) {
+        } catch (IllegalArgumentException | DatabaseException | SQLException | NullPointerException e) {
             return new Response<>(null, e.getMessage());
         }
     }
 
-    public Response<UUID> loginUserByPhone(CredentialsDto credentialsDto) {
-        try {
-            Credentials credentials = new Credentials(credentialsDto);
-            User.validatePhone(credentials.getLogin());
-            return new Response<>(accountDao.loginByPhone(credentials), "");
-        } catch (IllegalArgumentException | DatabaseException | SQLException e) {
-            return new Response<>(null, e.getMessage());
-        }
-    }
-
-    public Response<UUID> loginUserByLogin(CredentialsDto credentialsDto) {
-        try {
-            Credentials credentials = new Credentials(credentialsDto);
-            return new Response<>(accountDao.loginByLogin(credentials), "");
-        } catch (IllegalArgumentException | DatabaseException | SQLException e) {
-            return new Response<>(null, e.getMessage());
-        }
-    }
-
-    public String logout(UUID token) {
-        try {
-            accountDao.logout(token);
-            return "";
-        } catch (IllegalArgumentException | DatabaseException | SQLException e) {
-            return e.getMessage();
-        }
-    }
-
-    public Response<List<UUID>> getUserAccounts(UUID token) {
+    public Response<List<Account>> getUserAccounts(UUID token) {
         try {
             Utils.validateToken(token);
-            List<UUID> accounts = accountDao.getUserAccounts(token);
+            List<Account> accounts = accountDao.getUserAccounts(token);
             if (accounts.isEmpty()) {
-                throw new IllegalArgumentException("No created accounts");
+                throw new IllegalArgumentException(ServiceError.ACCOUNT_NOT_FOUND.message());
             }
             return new Response<>(accounts, "");
-        } catch (IllegalArgumentException | DatabaseException | SQLException e) {
+        } catch (IllegalArgumentException | DatabaseException | SQLException | NullPointerException e) {
             return new Response<>(null, e.getMessage());
         }
     }
 
-    public Response<List<UUID>> getUserAccountsByPhone(UUID token, String phone) {
+    public Response<List<Account>> getUserAccountsByPhone(UUID token, String phone) {
         try {
             Utils.validateToken(token);
             User.validatePhone(phone);
-            List<UUID> accounts = accountDao.getUserAccounts(token, phone);
+            List<Account> accounts = accountDao.getUserAccounts(token, phone);
             if (accounts.isEmpty()) {
-                throw new IllegalArgumentException("No created accounts");
+                throw new IllegalArgumentException(ServiceError.ACCOUNT_NOT_FOUND.message());
             }
             return new Response<>(accounts, "");
-        } catch (IllegalArgumentException | DatabaseException | SQLException e) {
+        } catch (IllegalArgumentException | DatabaseException | SQLException | NullPointerException e) {
             return new Response<>(null, e.getMessage());
         }
     }

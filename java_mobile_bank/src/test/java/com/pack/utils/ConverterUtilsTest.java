@@ -5,8 +5,9 @@ import org.junit.Test;
 
 import java.math.BigDecimal;
 
-import static com.pack.model.AccCode.*;
-import static com.pack.utils.Constants.*;
+import static com.pack.model.Currency.*;
+import static com.pack.utils.Constants.DELTA;
+import static com.pack.utils.ConverterUtils.*;
 
 public class ConverterUtilsTest {
 

@@ -20,13 +20,9 @@ public class Constants {
     public static final String ACCOUNT_TO = "account_to";
     public static final String AMOUNT_BEFORE = "amount_before";
     public static final String AMOUNT_AFTER = "amount_after";
+    public static final String OPERATION_TYPE = "operation_type";
 
     public static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
     public static final double DELTA = 0.001;
-    public static final String USD_TO_RUB_STR = "66.91";
-    public static final String EURO_TO_RUB_STR = "73.79";
-
-    public static final double USD_TO_RUB = Double.parseDouble(USD_TO_RUB_STR);
-    public static final double EURO_TO_RUB = Double.parseDouble(EURO_TO_RUB_STR);
 }
