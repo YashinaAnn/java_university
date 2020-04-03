@@ -40,9 +40,11 @@ public class OperationDaoImpl implements OperationDao {
         if (null == userId) {
             throw new DatabaseException(ServiceError.USER_NOT_AUTHORIZED);
         }
-        BigDecimal amount = operation.getAmount();
+
         Account accountFrom = accountDao.getAccountById(operation.getAccountFrom(), token);
         Account accountTo = accountDao.getAccountById(operation.getAccountTo(), token);
+        BigDecimal amount = ConverterUtils.convert(operation.getAmount(),
+                operation.getAccCode(), accountFrom.getAccCode());
 
         BigDecimal accountAmount = accountFrom.getAmount();
         if (accountAmount.compareTo(amount) < 0) {
@@ -53,7 +55,7 @@ public class OperationDaoImpl implements OperationDao {
 
         BigDecimal recipientAmountBefore = accountTo.getAmount();
         BigDecimal recipientAmountAfter = recipientAmountBefore.add(ConverterUtils.convert(amount,
-                operation.getAccCode(), accountTo.getAccCode()));
+                accountFrom.getAccCode(), accountTo.getAccCode()));
 
         JdbcService.updateAccountAmount(operation.getAccountFrom(), operation.getAmountAfter());
         JdbcService.updateAccountAmount(operation.getAccountTo(), recipientAmountAfter);
